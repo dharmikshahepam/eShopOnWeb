@@ -21,17 +21,17 @@ jobs:
         with:
           dotnet-version: '8.x'
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Build API Project
+        run: dotnet build ./src/PublicApi/PublicApi.csproj --configuration Release
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      - name: Publish API Project
+        run: dotnet publish ./src/PublicApi/PublicApi.csproj -c Release -o "${{env.DOTNET_ROOT}}/ApiApp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: "${{env.DOTNET_ROOT}}/ApiApp"
 
   deploy:
     runs-on: windows-latest
