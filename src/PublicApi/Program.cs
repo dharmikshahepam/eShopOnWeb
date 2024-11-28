@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using BlazorShared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,18 +19,29 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MinimalApi.Endpoint.Configurations.Extensions;
 using MinimalApi.Endpoint.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+// Use to force loading of appsettings.json of test project
+builder.Configuration.AddConfigurationFile("appsettings.test.json");
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+// Add Application Insights telemetry with instrumentation key
+
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+});
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Information); // Set the log level for Application Insights
+builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("Microsoft.eShopWeb.PublicApi.CatalogItemEndpoints", LogLevel.Information);
 
 builder.Services.AddEndpoints();
 
-// Use to force loading of appsettings.json of test project
-builder.Configuration.AddConfigurationFile("appsettings.test.json");
-builder.Logging.AddConsole();
 
 Microsoft.eShopWeb.Infrastructure.Dependencies.ConfigureServices(builder.Configuration, builder.Services);
 
@@ -44,6 +56,7 @@ var catalogSettings = builder.Configuration.Get<CatalogSettings>() ?? new Catalo
 builder.Services.AddSingleton<IUriComposer>(new UriComposer(catalogSettings));
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
 builder.Services.AddScoped<ITokenClaimsService, IdentityTokenClaimService>();
+builder.Services.AddHttpClient<OrderService>();
 
 var configSection = builder.Configuration.GetRequiredSection(BaseUrlConfiguration.CONFIG_NAME);
 builder.Services.Configure<BaseUrlConfiguration>(configSection);
@@ -74,11 +87,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: CORS_POLICY,
         corsPolicyBuilder =>
-        {
-            corsPolicyBuilder.WithOrigins(baseUrlConfig!.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'));
-            corsPolicyBuilder.AllowAnyMethod();
-            corsPolicyBuilder.AllowAnyHeader();
-        });
+    {
+        corsPolicyBuilder.WithOrigins(baseUrlConfig!.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'));
+        corsPolicyBuilder.AllowAnyMethod();
+        corsPolicyBuilder.AllowAnyHeader();
+    });
 });
 
 builder.Services.AddControllers();
@@ -118,15 +131,13 @@ builder.Services.AddSwaggerGen(c =>
 
                         },
                         new List<string>()
-                    }
-            });
+        }
+    });
 });
 
 var app = builder.Build();
 
-app.Logger.LogInformation("PublicApi App created...");
-
-app.Logger.LogInformation("Seeding Database...");
+app.Logger.LogInformation("API created...");
 
 using (var scope = app.Services.CreateScope())
 {
@@ -175,7 +186,7 @@ app.UseSwaggerUI(c =>
 app.MapControllers();
 app.MapEndpoints();
 
-app.Logger.LogInformation("LAUNCHING PublicApi");
+//app.Logger.LogInformation("LAUNCHING PublicApi");
 app.Run();
 
 public partial class Program { }
