@@ -59,9 +59,11 @@ public class OrderService : IOrderService
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
         await _orderRepository.AddAsync(order);
+
+        await UploadRequestLogToBlob(order);
     }
 
-    public async Task NotifyWarehouseAsync(Order order)
+    public async Task UploadRequestLogToBlob(Order order)
     {
         var functionUrl = _configuration["OrderItemsReserverFunctionUrl"];
         if (!string.IsNullOrWhiteSpace(functionUrl))
