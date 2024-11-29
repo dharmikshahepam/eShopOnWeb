@@ -66,6 +66,7 @@ public class OrderService : IOrderService
     public async Task UploadRequestLogToBlob(Order order)
     {
         var functionUrl = _configuration["OrderItemsReserverFunctionUrl"];
+        //functionUrl = "http://localhost:7246/api/OrderItemReserver";
         if (!string.IsNullOrWhiteSpace(functionUrl))
         {
             var orderDetails = new
