@@ -60,10 +60,11 @@ public class OrderService : IOrderService
 
         await _orderRepository.AddAsync(order);
 
-        //await UploadRequestLogToBlob(order);
+        //await SaveOrderRequestToBlobAsync(order);
+        await SaveOrderInCosmosAsync(order);
     }
 
-    public async Task UploadRequestLogToBlob(Order order)
+    public async Task SaveOrderRequestToBlobAsync(Order order)
     {
         var functionUrl = _configuration["OrderItemsReserverFunctionUrl"];
         //functionUrl = "http://localhost:7246/api/OrderItemReserver";
@@ -82,6 +83,32 @@ public class OrderService : IOrderService
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception("Failed to notify warehouse");
+            }
+        }
+
+    }
+
+    public async Task SaveOrderInCosmosAsync(Order order)
+    {
+        var functionUrl = _configuration["OrderReserverFunctionUrl"];
+        //functionUrl = "http://localhost:7246/api/OrderReserver";
+        if (!string.IsNullOrWhiteSpace(functionUrl))
+        {
+            var orderDetails = new
+            {
+                ShippingAddress = $"{order.ShipToAddress.Street}, {order.ShipToAddress.City},  {order.ShipToAddress.State} - {order.ShipToAddress.ZipCode}, {order.ShipToAddress.ZipCode}",
+                Items = order.OrderItems,
+                OrderDate = order.OrderDate,
+                OrderId = order.Id
+            };
+
+            var jsonContent = new StringContent(System.Text.Json.JsonSerializer.Serialize(orderDetails), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(functionUrl, jsonContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception("Failed to save Order" + response.StatusCode + response);
             }
         }
 
