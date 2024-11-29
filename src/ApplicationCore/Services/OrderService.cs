@@ -60,7 +60,7 @@ public class OrderService : IOrderService
 
         await _orderRepository.AddAsync(order);
 
-        await UploadRequestLogToBlob(order);
+        //await UploadRequestLogToBlob(order);
     }
 
     public async Task UploadRequestLogToBlob(Order order)
