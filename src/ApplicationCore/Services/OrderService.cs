@@ -91,7 +91,7 @@ public class OrderService : IOrderService
     public async Task SaveOrderInCosmosAsync(Order order)
     {
         var functionUrl = _configuration["OrderReserverFunctionUrl"];
-        //functionUrl = "http://localhost:7246/api/OrderReserver";
+        functionUrl = "http://localhost:7246/api/OrderReserver";
         if (!string.IsNullOrWhiteSpace(functionUrl))
         {
             var orderDetails = new

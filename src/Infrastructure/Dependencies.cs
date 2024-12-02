@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Azure.Identity;
+using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.eShopWeb.Infrastructure.Data;
 using Microsoft.eShopWeb.Infrastructure.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Azure.Security.KeyVault.Secrets;
 
 namespace Microsoft.eShopWeb.Infrastructure;
 
@@ -20,7 +23,7 @@ public static class Dependencies
         {
             services.AddDbContext<CatalogContext>(c =>
                c.UseInMemoryDatabase("Catalog"));
-         
+
             services.AddDbContext<AppIdentityDbContext>(options =>
                 options.UseInMemoryDatabase("Identity"));
         }
@@ -29,12 +32,32 @@ public static class Dependencies
             // use real database
             // Requires LocalDB which can be installed with SQL Server Express 2016
             // https://www.microsoft.com/en-us/download/details.aspx?id=54284
+            //services.AddDbContext<CatalogContext>(c =>
+            //    c.UseSqlServer(configuration.GetConnectionString("CatalogConnection")));
+
+            //// Add Identity DbContext
+            //services.AddDbContext<AppIdentityDbContext>(options =>
+            //    options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
+
             services.AddDbContext<CatalogContext>(c =>
-                c.UseSqlServer(configuration.GetConnectionString("CatalogConnection")));
+                c.UseSqlServer(GetConnectionString(configuration, "ConnectionStrings--CatalogConnection")));
 
             // Add Identity DbContext
             services.AddDbContext<AppIdentityDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
+                options.UseSqlServer(GetConnectionString(configuration, "ConnectionStrings--IdentityConnection")));
         }
+    }
+
+    private static string? GetConnectionString(IConfiguration configuration, string secretName)
+    {
+        var keyVaultURL = configuration.GetSection("KeyVault:KeyVaultURL");
+        var keyVaultClientId = configuration.GetSection("KeyVault:ClientId");
+        var keyVaultClientSecret = configuration.GetSection("KeyVault:ClientSecret");
+        var keyVaultDirectoryId = configuration.GetSection("KeyVault:DirectoryId");
+
+        var credential = new ClientSecretCredential(keyVaultDirectoryId?.Value, keyVaultClientId?.Value, keyVaultClientSecret?.Value);
+        var client = new SecretClient(new Uri(keyVaultURL?.Value), new DefaultAzureCredential());
+        var connectionString = client.GetSecret(secretName).Value.Value.ToString();
+        return connectionString;
     }
 }
