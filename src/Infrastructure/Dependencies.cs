@@ -40,11 +40,11 @@ public static class Dependencies
             //    options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
 
             services.AddDbContext<CatalogContext>(c =>
-                c.UseSqlServer(GetConnectionString(configuration, "ConnectionStrings--CatalogConnection")));
+                c.UseSqlServer(GetConnectionString(configuration, "CatalogConnectionDB")));
 
             // Add Identity DbContext
             services.AddDbContext<AppIdentityDbContext>(options =>
-                options.UseSqlServer(GetConnectionString(configuration, "ConnectionStrings--IdentityConnection")));
+                options.UseSqlServer(GetConnectionString(configuration, "IdentityConnectionDB")));
         }
     }
 
