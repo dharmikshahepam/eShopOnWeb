@@ -9,6 +9,7 @@
 		<PackageReference Include="Ardalis.GuardClauses" />
 		<PackageReference Include="Ardalis.Result" />
 		<PackageReference Include="Ardalis.Specification" />
+		<PackageReference Include="Azure.Messaging.ServiceBus" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />		
 		<PackageReference Include="System.Security.Claims" />
 		<PackageReference Include="System.Text.Json" />

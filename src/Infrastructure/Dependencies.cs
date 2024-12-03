@@ -32,19 +32,19 @@ public static class Dependencies
             // use real database
             // Requires LocalDB which can be installed with SQL Server Express 2016
             // https://www.microsoft.com/en-us/download/details.aspx?id=54284
-            //services.AddDbContext<CatalogContext>(c =>
-            //    c.UseSqlServer(configuration.GetConnectionString("CatalogConnection")));
-
-            //// Add Identity DbContext
-            //services.AddDbContext<AppIdentityDbContext>(options =>
-            //    options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
-
             services.AddDbContext<CatalogContext>(c =>
-                c.UseSqlServer(GetConnectionString(configuration, "CatalogConnectionDB")));
+                c.UseSqlServer(configuration.GetConnectionString("CatalogConnection")));
 
             // Add Identity DbContext
             services.AddDbContext<AppIdentityDbContext>(options =>
-                options.UseSqlServer(GetConnectionString(configuration, "IdentityConnectionDB")));
+                options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
+
+            //services.AddDbContext<CatalogContext>(c =>
+            //    c.UseSqlServer(GetConnectionString(configuration, "CatalogConnectionDB")));
+
+            //// Add Identity DbContext
+            //services.AddDbContext<AppIdentityDbContext>(options =>
+            //    options.UseSqlServer(GetConnectionString(configuration, "IdentityConnectionDB")));
         }
     }
 

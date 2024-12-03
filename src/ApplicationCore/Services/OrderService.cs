@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
+using Azure.Messaging.ServiceBus;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
 using Microsoft.eShopWeb.ApplicationCore.Entities.BasketAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
@@ -61,13 +62,14 @@ public class OrderService : IOrderService
         await _orderRepository.AddAsync(order);
 
         //await SaveOrderRequestToBlobAsync(order);
-        await SaveOrderInCosmosAsync(order);
+        //await SaveOrderInCosmosAsync(order);
+        await SaveOrderToQueueAsync(order);
     }
 
     public async Task SaveOrderRequestToBlobAsync(Order order)
     {
         var functionUrl = _configuration["OrderItemsReserverFunctionUrl"];
-        //functionUrl = "http://localhost:7246/api/OrderItemReserver";
+        //functionUrl = "http://localhost:7246/api/OrderReserver";
         if (!string.IsNullOrWhiteSpace(functionUrl))
         {
             var orderDetails = new
@@ -112,5 +114,36 @@ public class OrderService : IOrderService
             }
         }
 
+    }
+
+    public async Task SaveOrderToQueueAsync(Order order)
+    {
+        var orderDetails = new
+        {
+            ItemId = order.Id.ToString(),
+            Quantity = order.OrderItems.Sum(x => x.Units),
+        };
+        var serviceBusConnectionString = _configuration["OrderReserverServiceBusUrl"];
+        var serviceBusQueueName = _configuration["OrderReserverServiceBusQueueName"];
+        var messageBody = System.Text.Json.JsonSerializer.Serialize(orderDetails);
+        var serviceBusClient = new ServiceBusClient(serviceBusConnectionString);
+
+        ServiceBusSender sender = serviceBusClient.CreateSender(serviceBusQueueName);
+
+        try
+        {
+            ServiceBusMessage message = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageBody));
+            await sender.SendMessageAsync(message);
+            Console.WriteLine("Order sent to Service Bus successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending message to Service Bus: {ex.Message}");
+        }
+        finally
+        {
+            await sender.DisposeAsync();
+            await serviceBusClient.DisposeAsync();
+        }
     }
 }
